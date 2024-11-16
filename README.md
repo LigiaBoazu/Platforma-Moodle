@@ -55,12 +55,12 @@ pip install peewee mysqlclient
 pip install pymongo
 ```
 
-## Verificarea colecșiilor în MongoDB
+## Verificarea colecțiilor în MongoDB
 
 Pentru a verifica colecțiile create în Mongo, se pot rula următoarele comenzi:
 
 ```bash
-mongosh "mongodb://ligia:ligia@localhost:27017"
+mongosh "mongodb://[path]"
 show databases
 use mongoDB
 show collections
