@@ -1,8 +1,10 @@
+import logging
 from fastapi import *
 from peewee import *
 from typing import List, Optional
 from pydantic_models import *
 from mysql_models import *
+from database import discipline_collection
 
 router = APIRouter()
 
@@ -146,6 +148,61 @@ def get_student_lectures(id:int):
     if Student.DoesNotExist:
         raise HTTPException(status_code=404, detail="Student not found")
 
+@router.put("/api/academia/lectures/{lecture_id}", response_model=DisciplinaPydantic)
+def create_lecture(lecture_id: str, lecture_info: CreareDisciplinaPydantic):
+    try:
+        profesor = Profesor.get(Profesor.id == lecture_info.id_titular)
+    except Profesor.DoesNotExist:
+        raise HTTPException(status_code=404, detail="Professor not found")
 
+    if Disciplina.select().where(Disciplina.cod == lecture_id).exists():
+        raise HTTPException(status_code=400, detail="A lecture with this code already exists")
 
+    try:
+        disciplina = Disciplina.create(
+            cod=lecture_id,
+            id_titular=lecture_info.id_titular,
+            nume_disciplina=lecture_info.nume_disciplina,
+            an_studiu=lecture_info.an_studiu,
+            tip_disciplina=lecture_info.tip_disciplina,
+            categorie_disciplina=lecture_info.categorie_disciplina,
+            tip_examinare=lecture_info.tip_examinare
+        )
+    except IntegrityError as e:
+        logging.error(f"Error creating the lecture: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Couldn't create the lecture: {str(e)}")
 
+    response_data = DisciplinaPydantic.from_orm(disciplina)
+
+    try:
+        discipline_document={
+            "disciplina": lecture_info.nume_disciplina,
+            "probe_evaluare": [
+                {
+                    "type": probe.tip_evaluare,
+                    "weight": probe.pondere,
+                    "description": probe.description
+                } for probe in lecture_info.proba_evaluare
+            ],
+            "materiale_curs": [
+                {
+                    "curs_number": curs.curs_number,
+                    "curs_name": curs.curs_name,
+                    "path_file": curs.path_file
+                } for curs in lecture_info.materiale_curs
+            ],
+            "materiale_laborator":[
+                {
+                    "lab_number": lab.lab_number,
+                    "curs_name": lab.curs_name,
+                    "path_file": lab.path_file
+                } for lab in lecture_info.materiale_lab
+            ]
+        }
+        discipline_collection.insert_one(discipline_document)
+    
+    except Exception:
+        logging.error("Error in inserting additional documents")
+        raise HTTPException(status_code=500, detail="Error in inserting additional documents")
+
+    return response_data

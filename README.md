@@ -64,8 +64,22 @@ mongosh "mongodb://[path]"
 show databases
 use mongoDB
 show collections
-db["probe evaluare"].find()
+db["discipline"].find()
 ```
+
+## Crearea unui serviciu gRPC
+
+În prima etapă, se creează un fișier .proto care definește interfața serviciului gRPC și tipurile de date pe care le vei folosi pentru a comunica între client și server. Acest fișier specifică:
+- mesajele (structurile de date) ce sunt trimise și primite
+- serviciile (funcțiile sau RPC-urile), care sunt disponibile pentru a fi apelate de client și server.
+
+În continuare sunt prezentate comenzile necesare pentru instalarea pachetului grpcio-tools și pentru a genera fișierele Python care conțin definițiile Protobuf (mesajele definite în fișierul .proto):
+
+```bash
+conda activate moodle
+pip install grpcio_tools
+python -m grpc_tools.protoc -I=[directorul în care se află fișierul .proto] --python_out=. --grpc_python_out=. autentificare.proto
+```  
 
 ## Rularea aplicației
 
@@ -73,6 +87,13 @@ Rularea aplicației se face din terminalul Visual Studio, folosind comanda:
 
 ```bash
 uvicorn main:app --reload 
+```  
+
+În cazul în care nu se poate porni container-ul docker, verificați dacă există vreun proces care folosește portul respectiv și eliminați-l, folosind comenzile:
+
+```bash
+netstat -ano | findstr :3306
+taskkill /PID [nr_proces] /F
 ```  
 
 

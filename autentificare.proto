@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package idm;
+
+service Autentificare {
+    rpc Cerere(Credentials) returns (Response);
+}
+
+message Credentials {
+    string email = 1;
+    string parola = 2; // numerotarea câmpurilor
+}
+
+message Response {
+    string token = 1;
+}
