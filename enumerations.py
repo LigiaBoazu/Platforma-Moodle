@@ -28,3 +28,8 @@ class CategorieDisciplina(str, Enum):
 class TipExaminare(str, Enum):
     examen='examen'
     colocviu='colocviu'
+
+class Rol(str, Enum):
+    admin= 'admin'
+    profesor= 'profesor'
+    student= 'student'

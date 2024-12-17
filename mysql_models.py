@@ -1,10 +1,17 @@
 from peewee import *
 from database import db
-from enumerations import *
+from enumerations import Rol, GradDidactic, TipAsociere, CicluStudii, TipDisciplina, CategorieDisciplina, TipExaminare
 
 class BaseModel(Model):
     class Meta:
         database=db
+
+class Utilizatori(BaseModel):
+    email = CharField(unique=True)
+    parola=CharField()
+    rol=CharField(choices=[(tag.value, tag.value) for tag in Rol], null=False)
+    class Meta:
+        db_table='Utilizatori'
 
 class Profesor(BaseModel):
     id = AutoField(primary_key=True)
@@ -52,3 +59,9 @@ class ProfesorDisciplina(BaseModel):
     class Meta:
         db_table="Profesor_Disciplina"
         primary_key=CompositeKey('profesor', 'disciplina')
+
+class Login(BaseModel):
+    username:str
+    password:str
+    class Meta:
+        db_table='Utilizatori'

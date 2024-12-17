@@ -60,3 +60,7 @@ class CreareDisciplinaPydantic(PydanticBaseModel):
     proba_evaluare: Optional[List[ProbaEvaluarePydantic]]=None
     materiale_curs: Optional[List[MaterialeCursPydantic]]=None
     materiale_lab: Optional[List[MaterialeLaboratorPydantic]]=None
+
+class LoginPydantic(PydanticBaseModel):
+    username: str
+    password: str

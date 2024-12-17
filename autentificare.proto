@@ -8,7 +8,7 @@ service Autentificare {
 
 message Credentials {
     string email = 1;
-    string parola = 2; // numerotarea câmpurilor
+    string parola = 2;
 }
 
 message Response {

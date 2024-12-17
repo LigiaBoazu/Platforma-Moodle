@@ -2,6 +2,7 @@ import logging
 from fastapi import *
 from peewee import *
 from typing import List, Optional
+from autentificare_token import create_token
 from pydantic_models import *
 from mysql_models import *
 from database import discipline_collection
@@ -206,3 +207,12 @@ def create_lecture(lecture_id: str, lecture_info: CreareDisciplinaPydantic):
         raise HTTPException(status_code=500, detail="Error in inserting additional documents")
 
     return response_data
+
+@router.post("/api/academia/login")
+def login(credentials: LoginPydantic):
+    try:
+        user = Utilizatori.get((Utilizatori.email == credentials.username) & (Utilizatori.parola == credentials.password))
+        token = create_token(data={"sub": credentials.username})
+        return {"acces_token": token}
+    except Utilizatori.DoesNotExist:
+        raise HTTPException(status_code=401, detail="Incorrect credentials")
