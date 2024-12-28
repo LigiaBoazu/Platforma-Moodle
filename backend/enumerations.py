@@ -33,3 +33,11 @@ class Rol(str, Enum):
     admin= 'admin'
     profesor= 'profesor'
     student= 'student'
+
+class TipSectiune(str, Enum):
+    curs='curs'
+    laborator='laborator'
+    seminar='seminar'
+    examen='examen'
+    test='test'
+    informatii='iformatii'

@@ -2,12 +2,14 @@ import logging
 from fastapi import *
 from peewee import *
 from typing import List, Optional
-from autentificare_token import create_token
+from autentificare_token import create_token, validate_token
 from pydantic_models import *
 from mysql_models import *
 from database import discipline_collection
+from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 @router.get("/api/academia/professors", response_model=List[ProfesorPydantic])
 def get_professor(
@@ -18,8 +20,13 @@ def get_professor(
     tip_asociere: Optional[str]=None,
     afiliere: Optional[str]=None,
     page: Optional[int]=1,
-    limit: Optional[int]=20
+    limit: Optional[int]=20,
+    token: str=Depends(oauth2_scheme)
 ):
+    user_data = validate_token(token)
+    if user_data["role"] not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
     query=Profesor.select()
     if grad_didactic:
         query=query.where(Profesor.grad_didactic==grad_didactic)
@@ -54,8 +61,14 @@ def get_student(
     an_studiu:Optional[int]=None,
     grupa:Optional[int]=None,
     page: Optional[int]=1,
-    limit: Optional[int]=20
+    limit: Optional[int]=20,
+    token: str=Depends(oauth2_scheme)
 ):
+    
+    user_data = validate_token(token)
+    if user_data["role"] not in ["profesor", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
     query=Student.select()
     if ciclu_studii:
         query=query.where(Student.ciclu_studii==ciclu_studii)
@@ -91,8 +104,14 @@ def get_lecture(
     categorie_disciplina: Optional[str]=None,
     tip_examinare: Optional[str]=None,
     page: Optional[int]=1,
-    limit: Optional[int]=20
+    limit: Optional[int]=20,
+    username: str=Depends(validate_token),
+    token: str = Depends(oauth2_scheme)
 ):
+    user_data = validate_token(token)
+    if user_data["role"] not in ["profesor", "admin"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
     query=Disciplina.select()
     if cod:
         query=query.where(Disciplina.cod==cod)
@@ -134,7 +153,10 @@ def get_lecture(
 
 
 @router.get("/api/academia/professors/{id}/lectures")
-def get_professor_lectures(id:int):
+def get_professor_lectures(id:int, token: str = Depends(oauth2_scheme)):
+    user_data = validate_token(token)
+    if user_data["role"] not in ["admin", "profesor"]:
+        raise HTTPException(status_code=403, detail="Access denied")
     professor=Profesor.get(Profesor.id==id)
     lectures=Disciplina.select().where(Disciplina.id_titular==professor.id)
     return [lecture for lecture in lectures]
@@ -142,7 +164,10 @@ def get_professor_lectures(id:int):
         raise HTTPException(status_code=404, detail="Professor not found")
 
 @router.get("/api/academia/students/{id}/lectures")
-def get_student_lectures(id:int):
+def get_student_lectures(id:int, token: str = Depends(oauth2_scheme)):
+    user_data = validate_token(token)
+    if user_data["role"] not in ["admin", "student"]:
+        raise HTTPException(status_code=403, detail="Access denied")
     student=Student.get(Student.id==id)
     lectures=Disciplina.select().join(StudentDisciplina).where(StudentDisciplina.student==student)
     return [lecture for lecture in lectures]
@@ -150,7 +175,10 @@ def get_student_lectures(id:int):
         raise HTTPException(status_code=404, detail="Student not found")
 
 @router.put("/api/academia/lectures/{lecture_id}", response_model=DisciplinaPydantic)
-def create_lecture(lecture_id: str, lecture_info: CreareDisciplinaPydantic):
+def create_lecture(lecture_id: str, lecture_info: CreareDisciplinaPydantic, token: str = Depends(oauth2_scheme)):
+    user_data = validate_token(token)
+    if user_data["role"] not in ["admin", "profesor"]:
+        raise HTTPException(status_code=403, detail="Access denied")
     try:
         profesor = Profesor.get(Profesor.id == lecture_info.id_titular)
     except Profesor.DoesNotExist:
@@ -212,7 +240,7 @@ def create_lecture(lecture_id: str, lecture_info: CreareDisciplinaPydantic):
 def login(credentials: LoginPydantic):
     try:
         user = Utilizatori.get((Utilizatori.email == credentials.username) & (Utilizatori.parola == credentials.password))
-        token = create_token(data={"sub": credentials.username})
-        return {"acces_token": token}
+        token = create_token(data={"sub": user.email, "role": user.rol})
+        return {"access_token": token}
     except Utilizatori.DoesNotExist:
         raise HTTPException(status_code=401, detail="Incorrect credentials")

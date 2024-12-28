@@ -1,6 +1,6 @@
 from peewee import *
 from database import db
-from enumerations import Rol, GradDidactic, TipAsociere, CicluStudii, TipDisciplina, CategorieDisciplina, TipExaminare
+from enumerations import *
 
 class BaseModel(Model):
     class Meta:
@@ -45,6 +45,15 @@ class Disciplina(BaseModel):
     tip_examinare=CharField(choices=[(tag.value, tag.value) for tag in TipExaminare], null=False)
     class Meta:
         db_table="Discipline"
+
+class Sectiuni(BaseModel):
+    id=AutoField(primary_key=True)
+    tip=CharField(choices=[(tag.value, tag.value) for tag in TipSectiune], null=False)
+    cod_disciplina = ForeignKeyField(Disciplina, backref='sectiuni', field=Profesor.id, column_name='cod_disciplina')
+    nume=CharField()
+    descriere=TextField(null=True)
+    class Meta:
+        db_table="Sectiuni"
 
 class StudentDisciplina(BaseModel):
     student=ForeignKeyField(Student, backref='lecture')
