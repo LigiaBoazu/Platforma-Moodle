@@ -152,16 +152,31 @@ def get_lecture(
     ]
 
 
-@router.get("/api/academia/professors/{id}/lectures")
-def get_professor_lectures(id:int, token: str = Depends(oauth2_scheme)):
+@router.get("/api/academia/professors/{id}/lectures", response_model=List[DisciplinaPydantic])
+def get_professor_lectures(id: int, token: str = Depends(oauth2_scheme)):
     user_data = validate_token(token)
     if user_data["role"] not in ["admin", "profesor"]:
         raise HTTPException(status_code=403, detail="Access denied")
-    professor=Profesor.get(Profesor.id==id)
-    lectures=Disciplina.select().where(Disciplina.id_titular==professor.id)
-    return [lecture for lecture in lectures]
-    if Profesor.DoesNotExist:
-        raise HTTPException(status_code=404, detail="Professor not found")
+    try:
+        lectures = Disciplina.select().where(Disciplina.id_titular == id)
+        if not lectures.exists():
+            return []
+        return [
+            DisciplinaPydantic(
+                cod=lecture.cod,
+                id_titular=lecture.id_titular.id,
+                nume_disciplina=lecture.nume_disciplina,
+                an_studiu=lecture.an_studiu,
+                tip_disciplina=lecture.tip_disciplina,
+                categorie_disciplina=lecture.categorie_disciplina,
+                tip_examinare=lecture.tip_examinare
+            )
+            for lecture in lectures
+        ]
+    except Exception as e:
+        logging.error(f"Error fetching lectures for professor ID {id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/api/academia/students/{id}/lectures")
 def get_student_lectures(id:int, token: str = Depends(oauth2_scheme)):
